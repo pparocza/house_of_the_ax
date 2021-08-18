@@ -1,21 +1,13 @@
-var masterGain;
-var fadeFilter;
 var offlineBuffer;
-var globalNow;
+var piece;
 
 setTimeout(function(){bufferLoaded();}, 1000);
 
 function bufferLoaded(){
 
-	var gain = audioCtx.createGain();
-	gain.gain.value = 1;
-
-	fadeFilter = new FilterFade(0);
-
-	masterGain = audioCtx.createGain();
-	masterGain.connect(gain);
-	gain.connect(fadeFilter.input);
-	fadeFilter.connect(audioCtx.destination);
+	piece = new Piece();
+	piece.initMasterChannel();
+	piece.load();
 
 	// INITIALIZATIONS
 
@@ -33,9 +25,7 @@ function bufferLoaded(){
 
 function runPatch(){
 
-		fadeFilter.start(1, 50);
-		globalNow = audioCtx.currentTime;
-
+		piece.start();
 
 }
 
@@ -43,10 +33,7 @@ function runPatch(){
 
 function stopPatch(){
 
-	var now = audioCtx.currentTime;
-	fadeFilter.start(0, 20);
-	setTimeout(function(){masterGain.disconnect();}, 100);
-	startButton.innerHTML = "reset";
+	piece.stop();
 
 	if(onlineButton.innerHTML=="offline"){
 		offlineBuffer.stop();

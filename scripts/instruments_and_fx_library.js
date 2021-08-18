@@ -9168,6 +9168,14 @@ MyBuffer2.prototype = {
 		return this;
 
 	},
+	
+	bufferShape: function(inBuffer){
+
+		this.shape = inBuffer.getChannelData(0);
+
+		return this;
+
+	},
 
 	unipolarNoise: function(){
 
