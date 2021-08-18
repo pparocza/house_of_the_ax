@@ -22,7 +22,7 @@ class Piece {
 
     load() {
 
-        this.sound1 = new SpliceFMConvolver( this );
+        this.sound1 = new SpliceFMConvolverAndWaveShaper( this );
 
         this.sound1.load();
 
@@ -392,6 +392,139 @@ class SpliceFMConvolver extends Piece {
         this.eG.connect( this.c );
         this.c.connect( this.output );
         this.eG.connect( this.output );
+
+        bufferGraph( this.oB.buffer );
+
+    }
+
+    play( startTime , playbackRate ) {
+
+        this.oB.bufferSource.playbackRate.setValueAtTime( playbackRate , startTime );
+        this.eB.startAtTime( startTime );
+
+    }
+
+}
+
+class SpliceFMConvolverAndWaveShaper extends Piece {
+
+    constructor( piece ){
+
+        super();
+
+        this.output = new MyGain ( 0.5 );
+
+        this.output.connect( piece.masterGain );
+
+    }
+
+    load() {
+
+        // oscillator buffer
+        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
+        this.oB.playbackRate = 432 * 0.125 ;
+        this.oB.loop = true;
+        this.oB.start();
+
+        // convolverBuffer
+        this.cB = new MyBuffer2( 2 , 1 , audioCtx.sampleRate );
+        this.cSB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
+        this.c = new MyConvolver();
+        this.c.output.gain.value = 0.25;
+
+        // shaperBuffer
+        this.shB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
+        this.sh = new MyWaveShaper();
+
+        this.oBG = new MyGain( 432 * 0.25 );
+
+        this.o = new MyOsc( 'sine' , 432 );
+        this.o.start();
+
+        // splice buffer
+        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
+
+            // detuned sines splice
+            const nS = 100;
+            const cNS = 50;
+            const detuneRange = 0.05;
+
+            // fm splice
+            for( let i = 0 ; i < nS ; i++ ){
+
+                this.sB.sine( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
+
+                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
+
+            }
+
+            this.oB.movingAverage( 2156 );
+
+            let r = 0;
+
+            // convolver splice 1
+            for( let i = 0 ; i < cNS ; i++ ){
+
+                r = randomInt( 0 , 2 );
+
+                if( r == 1 ){
+                    this.sB.sine( 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
+                } else { this.sB.noise().fill( 0 ); }
+
+                this.cSB.spliceBuffer( this.sB.buffer , i / cNS , ( i + 1 ) / cNS , i / cNS );
+
+            }
+
+            // this.cSB.movingAverage( 2156 );
+            bufferGraph( this.cSB.buffer );
+            this.cB.bufferShape( this.cSB.buffer ).add( 0 );
+
+            // convolver splice 2
+            for( let i = 0 ; i < cNS ; i++ ){
+
+                r = randomInt( 0 , 2 );
+
+                if( r == 1 ){
+                    this.sB.sine( 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
+                } else { this.sB.noise().fill( 0 ); }
+
+                this.cSB.spliceBuffer( this.sB.buffer , i / cNS , ( i + 1 ) / cNS , i / cNS );
+
+            }
+
+            // this.cSB.movingAverage( 2156 );
+            bufferGraph( this.cSB.buffer );
+            this.cB.bufferShape( this.cSB.buffer ).add( 1 );
+
+            this.c.setBuffer( this.cB.buffer );
+
+            for( let i = 0 ; i < nS ; i++ ){
+
+                this.sB.sine( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
+
+                this.shB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
+
+            }
+
+            this.shB.movingAverage( 2156 );
+            this.sh.bufferShape( this.shB.buffer );
+
+        // envelope buffer
+        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
+        this.eB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 4 ).add( 0 );
+        this.eB.playbackRate = 1;
+
+        this.eG = new MyGain( 0 );
+
+        this.oB.connect( this.oBG ); 
+        this.oBG.connect( this.o.frequencyInlet );
+        this.o.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
+        this.eG.connect( this.sh );
+
+        this.sh.connect( this.c );
+        
+        // this.sh.connect( this.output );
+        this.c.connect( this.output );
 
         bufferGraph( this.oB.buffer );
 

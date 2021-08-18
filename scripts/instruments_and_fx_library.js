@@ -10169,6 +10169,15 @@ MyWaveShaper.prototype = {
 		this.waveShaper.curve = this.curve;
 	},
 
+	// fill waveshaper with a single value
+	bufferShape: function(buffer){
+
+		this.nSamples = audioCtx.sampleRate;
+		this.curve = buffer.getChannelData(0);
+
+		this.waveShaper.curve = this.curve;
+	},
+
 	// fill waveshaper with random values
 	makeNoise: function(rangeMin, rangeMax){
 
