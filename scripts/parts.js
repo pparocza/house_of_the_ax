@@ -22,7 +22,8 @@ class Piece {
 
     load() {
 
-        this.loadOverlappingWaves();
+        this.loadOverlappingWavesFM();
+        this.loadResoTick();
 
     }
 
@@ -31,7 +32,45 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        this.startOverlappingWaves2();
+        // this.startOverlappingWavesFM2();
+        this.startResoTick();
+
+    }
+
+    loadResoTick(){
+
+        this.resoTick1 = new ResoTick( this );
+        this.resoTick1.load();
+
+    }
+
+    startResoTick(){
+
+        const sL = 200;
+        let s = new Sequence();
+        let r = 0;
+
+        s.randomFloats( sL , 0.135 , 0.135 );
+        s.sumSequence();
+        s.add( this.globalNow );
+
+        s = s.sequence;
+
+        const fund = 432 * 0.5 ;
+        const iA = [ 1 , M2 , M3 , P4 , P5 , M6 , M7 ];
+
+        for( let i = 0 ; i < sL ; i++ ){
+
+            this.resoTick1.play( s[ i ] );
+            this.resoTick1.f.biquad.frequency.setValueAtTime( fund * randomArrayValue( iA ) , s[ i ] );
+            this.resoTick1.w.wG.gain.gain.setValueAtTime( randomFloat( 0.00005 , 0.00025 ) , s[ i ] );
+            this.resoTick1.output.gain.gain.setValueAtTime( randomFloat( 0.25 , 0.6 ) , s[ i ] );
+
+            this.resoTick1.wG.gain.gain.setValueAtTime( randomFloat( 0 , 1 ) , s[ i ] );
+            this.resoTick1.d.output.gain.setValueAtTime( randomFloat( 0 , 1 ) , s[ i ] );
+            this.resoTick1.c.output.gain.setValueAtTime( randomFloat( 0 , 1 ) , s[ i ] );
+
+        }
 
     }
 
@@ -58,7 +97,7 @@ class Piece {
 
     }
 
-    loadOverlappingWaves(){
+    loadOverlappingWavesFM(){
 
         const nSounds = 5;
 
@@ -76,6 +115,44 @@ class Piece {
     startOverlappingWaves(){
 
         const sL = 100;
+        let s = new Sequence();
+        let r = 0;
+
+        s.randomFloats( sL , 5 , 5 );
+        s.sumSequence();
+        s.add( this.globalNow );
+
+        s = s.sequence;
+
+        for( let i = 0 ; i < sL ; i++ ){
+
+            r = randomInt( 0 , this.soundArrayOW.length );
+
+            this.soundArrayOW[ 0 ].play( s[ i ] );
+
+        }
+
+
+    }
+
+    loadOverlappingWaves(){
+
+        const nSounds = 1;
+
+        this.soundArrayOW = [];
+
+        for( let i = 0 ; i < nSounds ; i++ ){
+
+            this.soundArrayOW[ i ] = new OverlappingWaves( this );
+            this.soundArrayOW[ i ].load( 2 );
+
+        }
+
+    }
+
+    startOverlappingWavesFM(){
+
+        const sL = 100;
         let r = 0;
 
         for( let i = 0 ; i < sL ; i++ ){
@@ -89,7 +166,7 @@ class Piece {
 
     }
 
-    startOverlappingWaves2(){
+    startOverlappingWavesFM2(){
 
         const sL = 100;
         let s = new Sequence();
@@ -699,7 +776,7 @@ class OverlappingWaves extends Piece {
 
         super();
 
-        this.output = new MyGain( 0.25 );
+        this.output = new MyGain( 0.0625 );
         
         this.output.connect( piece.masterGain );
 
@@ -707,9 +784,9 @@ class OverlappingWaves extends Piece {
 
     load( bufferLength ){
 
-        const duration = 16;
+        const duration = 2;
         const playbackRate = bufferLength/duration;
-        const fund = 432 * bufferLength * duration;
+        const fund = 0.5 * 432 * bufferLength * duration;
         const nH = 20;
         const hA = [ 1 , M2 , P5 , P4 , M6 ];
         const oA = [ 0.25 , 0.5 , 1 ];
@@ -753,7 +830,7 @@ class OverlappingWavesFM extends Piece {
 
         super();
 
-        this.output = new MyGain( 1 );
+        this.output = new MyGain( 2 );
         
         this.output.connect( piece.masterGain );
 
@@ -833,6 +910,85 @@ class OverlappingWavesFM extends Piece {
         this.pan.connect( this.output );
         c.connect( this.output );
         d.connect( this.output );
+
+    }
+
+    play( time ){
+
+        this.buffer.startAtTime( time );
+
+    }
+
+}
+
+class ResoTick extends Piece {
+
+    constructor( piece ){
+
+        super();
+
+        this.output = new MyGain( 0.5 );
+        
+        this.output.connect( piece.masterGain );
+
+    }
+
+    load(){
+
+        this.buffer = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
+        this.buffer.inverseSawtooth( 10 ).fill( 0 );
+        this.buffer.playbackRate = 1;
+
+        // FILTER
+
+        this.f = new MyBiquad( 'highpass' , 432 , 20 );
+        const f2 = new MyBiquad( 'lowpass' , 2000 , 1 );
+
+        // WAVESHAPER
+
+        this.w = new Effect();
+        this.w.fmShaper( 432 , 432 * 2 , 432 * 0.25 , 0.0002 );
+        this.w.on();
+
+        this.wG = new MyGain( 1 );
+
+        // REVERB
+
+        const cLength = 0.25;
+
+        this.c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
+        const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
+
+        cB.noise().fill( 0 );
+        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 0 );
+        
+        cB.noise().fill( 1 );
+        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 1 );
+        
+        this.c.setBuffer( cB.buffer );
+
+        // DELAY
+
+        this.d = new Effect();
+        this.d.randomShortDelay();
+        this.d.on();
+        this.d.output.gain.value = 0.125;
+
+        // PAN 
+
+        this.pan = new MyPanner2( 0 );
+
+        this.buffer.connect( f2 );
+        f2.connect( this.f );
+        this.f.connect( this.w );
+
+        this.w.connect( this.wG );
+        this.w.connect( this.d );
+        this.w.connect( this.c );
+
+        this.wG.connect( this.output );
+        this.d.connect( this.output );
+        this.c.connect( this.output );
 
     }
 
