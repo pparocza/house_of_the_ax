@@ -32,8 +32,8 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        this.startOverlappingWavesFM2();
-        // this.startResoTick();
+        // this.startOverlappingWavesFM2();
+        this.startResoTick();
 
     }
 
