@@ -22,7 +22,7 @@ class Piece {
 
     load() {
 
-        this.loadSpliceFadePad();
+        this.loadOverlappingWaves();
 
     }
 
@@ -31,7 +31,7 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        this.startSpliceFadePad();
+        this.startOverlappingWaves2();
 
     }
 
@@ -55,6 +55,60 @@ class Piece {
         this.sound2.play();
         this.sound3.play();
         this.sound4.play();
+
+    }
+
+    loadOverlappingWaves(){
+
+        const nSounds = 5;
+
+        this.soundArray = [];
+
+        for( let i = 0 ; i < nSounds ; i++ ){
+
+            this.soundArray[i] = new OverlappingWavesFM( this );
+            this.soundArray[i].load( 2 );
+
+        }
+
+    }
+
+    startOverlappingWaves(){
+
+        const sL = 100;
+        let r = 0;
+
+        for( let i = 0 ; i < sL ; i++ ){
+
+            r = randomInt( 0 , this.soundArray.length );
+
+            this.soundArray[ r ].play( i + this.globalNow );
+            this.soundArray[ r ].pan.setPositionAtTime( randomFloat( -1 , 1 ) , i + this.globalNow );
+
+        }
+
+    }
+
+    startOverlappingWaves2(){
+
+        const sL = 100;
+        let s = new Sequence();
+        let r = 0;
+
+        s.randomFloats( sL , 0.125 , 3 );
+        s.sumSequence();
+        s.add( this.globalNow );
+
+        s = s.sequence;
+
+        for( let i = 0 ; i < sL ; i++ ){
+
+            r = randomInt( 0 , this.soundArray.length );
+
+            this.soundArray[ r ].play( s[ i ] );
+            this.soundArray[ r ].pan.setPositionAtTime( randomFloat( -1 , 1 ) , s[ i ] );
+
+        }
 
     }
 
@@ -639,23 +693,152 @@ class SpliceFadePad extends Piece {
 
 }
 
-class OverlappingWaves extends piece{
+class OverlappingWaves extends Piece {
 
     constructor( piece ){
+
+        super();
+
+        this.output = new MyGain( 0.25 );
+        
+        this.output.connect( piece.masterGain );
 
     }
 
     load( bufferLength ){
 
+        const duration = 16;
+        const playbackRate = bufferLength/duration;
+        const fund = 432 * bufferLength * duration;
+        const nH = 20;
+        const hA = [ 1 , M2 , P5 , P4 , M6 ];
+        const oA = [ 0.25 , 0.5 , 1 ];
+        let peak = 0;
+
         this.buffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate );
+        this.buffer.playbackRate = playbackRate;
 
         this.tempBuffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate);
 
-        
+        for( let i = 0 ; i < nH ; i++ ){
+
+            peak = randomFloat( 0.3 , 0.7 );
+
+            this.tempBuffer.sine( fund * randomArrayValue( hA ) * randomArrayValue( oA ) , 1 ).fill( 0 );
+            this.tempBuffer.ramp( 0 , 1 , peak , randomFloat( peak , 0.7 ) , randomFloat( 1 , 2 ) , randomFloat( 1 , 2 ) ).multiply( 0 );
+            this.tempBuffer.constant( randomFloat( 0.25 , 1 ) ).multiply( 0 );
+    
+            this.buffer.bufferShape( this.tempBuffer.buffer ).add( 0 );
+
+        }
+
+        this.buffer.normalize( -1 , 1 );
+        this.buffer.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).multiply( 0 );
+
+        this.buffer.connect( this.output );
 
     }
 
     play(){
+
+        this.buffer.start();
+
+    }
+
+}
+
+class OverlappingWavesFM extends Piece {
+
+    constructor( piece ){
+
+        super();
+
+        this.output = new MyGain( 1 );
+        
+        this.output.connect( piece.masterGain );
+
+    }
+
+    load( bufferLength ){
+
+        const duration = 1;
+        const playbackRate = bufferLength/duration;
+        const fund = 1 * 432 * bufferLength * duration;
+        const nH = 20;
+        const hA2 = [ 1 , M2 , M3 , P4 , P5 , M6 , M7 ];
+        const oA2 = [ 0.5 , 1 , 2 ];
+        let peak = 0;
+
+        this.buffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate );
+        this.buffer.playbackRate = playbackRate;
+
+        this.tempBuffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate);
+
+        for( let i = 0 ; i < nH ; i++ ){
+
+            this.tempBuffer.sine( fund * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , 1 ).fill( 0 );
+            this.tempBuffer.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 8 ).multiply( 0 );
+            this.tempBuffer.constant( randomFloat( 0.25 , 1 ) ).multiply( 0 );
+    
+            this.buffer.bufferShape( this.tempBuffer.buffer ).add( 0 );
+
+        }
+
+        // this.buffer.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).multiply( 0 );
+        this.buffer.normalize( -1 , 1 );
+
+        const bG = new MyGain( fund * 0.25 );
+
+        const o = new MyOsc( 'sine' , 0 );
+        o.start();
+
+        // FILTER
+
+        const f = new MyBiquad( 'highpass' , 50 , 1 );
+
+        // REVERB
+
+        const cLength = randomFloat( 2 , 5 );
+
+        const c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
+        const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
+
+        cB.noise().fill( 0 );
+        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 0 );
+        
+        cB.noise().fill( 1 );
+        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 1 );
+        
+        c.setBuffer( cB.buffer );
+
+        // DELAY
+
+        const d = new Effect();
+        d.randomEcho();
+        d.on();
+        d.output.gain.value = 0.125;
+
+        // PAN 
+
+        this.pan = new MyPanner2( 0 );
+
+        this.buffer.connect( bG );
+        bG.connect( o.frequencyInlet );
+        o.connect( f );
+        
+        f.connect( this.pan );
+        f.connect( c );
+        f.connect( d );
+
+        this.pan.connect( this.output );
+        c.connect( this.output );
+        d.connect( this.output );
+
+    }
+
+    play( time ){
+
+        this.buffer.startAtTime( time );
 
     }
 
