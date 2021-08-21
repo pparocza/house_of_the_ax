@@ -22,8 +22,9 @@ class Piece {
 
     load() {
 
-        this.loadOverlappingWavesFM();
+        // this.loadOverlappingWavesFM();
         this.loadResoTick();
+        // this.loadSpliceFadePad();
 
     }
 
@@ -34,6 +35,7 @@ class Piece {
 
         // this.startOverlappingWavesFM2();
         this.startResoTick();
+        // this.startSpliceFadePad();
 
     }
 
@@ -56,19 +58,21 @@ class Piece {
 
         s = s.sequence;
 
-        const fund = 432 * 0.5 ;
-        const iA = [ 1 , M2 , M3 , P4 , P5 , M6 , M7 ];
+        const fund = 432 * 1 ;
+        const iA = [ 1 , P4 , M6 , M2 ];
+        const oA = [ 1 , 2 , 0.5 , 0.25 , 0.125 ];
 
         for( let i = 0 ; i < sL ; i++ ){
 
             this.resoTick1.play( s[ i ] );
-            this.resoTick1.f.biquad.frequency.setValueAtTime( fund * randomArrayValue( iA ) , s[ i ] );
-            this.resoTick1.w.wG.gain.gain.setValueAtTime( randomFloat( 0.00005 , 0.00025 ) , s[ i ] );
+            this.resoTick1.f.biquad.frequency.setValueAtTime( fund * randomArrayValue( iA ) * randomArrayValue( oA ) , s[ i ] );
+            this.resoTick1.w.wG.gain.gain.setValueAtTime( randomFloat( 0.000025 , 0.0005 ) , s[ i ] );
             this.resoTick1.output.gain.gain.setValueAtTime( randomFloat( 0.25 , 0.6 ) , s[ i ] );
 
-            this.resoTick1.wG.gain.gain.setValueAtTime( randomFloat( 0 , 1 ) , s[ i ] );
-            this.resoTick1.d.output.gain.setValueAtTime( randomFloat( 0 , 1 ) , s[ i ] );
-            this.resoTick1.c.output.gain.setValueAtTime( randomFloat( 0 , 1 ) , s[ i ] );
+            this.resoTick1.wG.gain.gain.setValueAtTime( randomFloat( 0.5 , 1 ) , s[ i ] );
+            this.resoTick1.d.output.gain.setValueAtTime( randomFloat( 0 , 2 ) , s[ i ] );
+            this.resoTick1.d2.output.gain.setValueAtTime( randomFloat( 0 , 0.0125 ) , s[ i ] );
+            this.resoTick1.c.output.gain.setValueAtTime( randomFloat( 2.75 , 3 ) , s[ i ] );
 
         }
 
@@ -830,7 +834,7 @@ class OverlappingWavesFM extends Piece {
 
         super();
 
-        this.output = new MyGain( 2 );
+        this.output = new MyGain( 4 );
         
         this.output.connect( piece.masterGain );
 
@@ -927,7 +931,7 @@ class ResoTick extends Piece {
 
         super();
 
-        this.output = new MyGain( 0.5 );
+        this.output = new MyGain( 0.25 );
         
         this.output.connect( piece.masterGain );
 
@@ -954,7 +958,7 @@ class ResoTick extends Piece {
 
         // REVERB
 
-        const cLength = 0.25;
+        const cLength = 0.5;
 
         this.c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
         const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
@@ -974,6 +978,11 @@ class ResoTick extends Piece {
         this.d.on();
         this.d.output.gain.value = 0.125;
 
+        this.d2 = new Effect();
+        this.d2.randomEcho();
+        this.d2.on();
+        this.d2.output.gain.value = 0.125;
+
         // PAN 
 
         this.pan = new MyPanner2( 0 );
@@ -985,9 +994,11 @@ class ResoTick extends Piece {
         this.w.connect( this.wG );
         this.w.connect( this.d );
         this.w.connect( this.c );
+        this.w.connect( this.d2 );
 
         this.wG.connect( this.output );
         this.d.connect( this.output );
+        this.d2.connect( this.output );
         this.c.connect( this.output );
 
     }
