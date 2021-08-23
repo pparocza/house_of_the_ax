@@ -52,14 +52,14 @@ class Piece {
         let s = new Sequence();
         let r = 0;
 
-        s.randomFloats( sL , 0.135 , 0.135 );
+        s.randomFloats( sL , 0.1 , 0.2 );
         s.sumSequence();
         s.add( this.globalNow );
 
         s = s.sequence;
 
         const fund = 432 * 1 ;
-        const iA = [ 1 , P4 , M6 , M2 ];
+        const iA = [ 1 , M3 , P5 , 2 ];
         const oA = [ 1 , 2 , 0.5 , 0.25 , 0.125 ];
 
         for( let i = 0 ; i < sL ; i++ ){
@@ -70,8 +70,8 @@ class Piece {
             this.resoTick1.output.gain.gain.setValueAtTime( randomFloat( 0.25 , 0.6 ) , s[ i ] );
 
             this.resoTick1.wG.gain.gain.setValueAtTime( randomFloat( 0.5 , 1 ) , s[ i ] );
-            this.resoTick1.d.output.gain.setValueAtTime( randomFloat( 0 , 2 ) , s[ i ] );
-            this.resoTick1.d2.output.gain.setValueAtTime( randomFloat( 0 , 0.0125 ) , s[ i ] );
+            this.resoTick1.d.output.gain.setValueAtTime( randomFloat( 1 , 2 ) , s[ i ] );
+            this.resoTick1.d2.output.gain.setValueAtTime( randomFloat( 1 , 2 ) , s[ i ] );
             this.resoTick1.c.output.gain.setValueAtTime( randomFloat( 2.75 , 3 ) , s[ i ] );
 
         }
@@ -945,20 +945,20 @@ class ResoTick extends Piece {
 
         // FILTER
 
-        this.f = new MyBiquad( 'highpass' , 432 , 20 );
-        const f2 = new MyBiquad( 'lowpass' , 2000 , 1 );
+        this.f = new MyBiquad( 'bandpass' , 432 , 20 );
+        const f2 = new MyBiquad( 'lowpass' , 20000 , 1 );
 
         // WAVESHAPER
 
         this.w = new Effect();
-        this.w.fmShaper( 432 , 432 * 2 , 432 * 0.25 , 0.0002 );
+        this.w.fmShaper( 432 * 2 , 432 * 4 , 432 * 2 , 1 );
         this.w.on();
 
         this.wG = new MyGain( 1 );
 
         // REVERB
 
-        const cLength = 0.5;
+        const cLength = 2;
 
         this.c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
         const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
@@ -974,14 +974,14 @@ class ResoTick extends Piece {
         // DELAY
 
         this.d = new Effect();
-        this.d.randomShortDelay();
+        this.d.randomEcho();
         this.d.on();
         this.d.output.gain.value = 0.125;
 
         this.d2 = new Effect();
         this.d2.randomEcho();
         this.d2.on();
-        this.d2.output.gain.value = 0.125;
+        this.d2.output.gain.value = 1;
 
         // PAN 
 
@@ -996,9 +996,13 @@ class ResoTick extends Piece {
         this.w.connect( this.c );
         this.w.connect( this.d2 );
 
-        this.wG.connect( this.output );
+        // this.wG.connect( this.output );
         this.d.connect( this.output );
         this.d2.connect( this.output );
+
+        this.c.connect( this.d );
+        this.c.connect( this.d2 );
+
         this.c.connect( this.output );
 
     }
