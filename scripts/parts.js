@@ -33,9 +33,7 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        // this.startOverlappingWavesFM2();
         this.startResoTick();
-        // this.startSpliceFadePad();
 
     }
 
@@ -52,27 +50,27 @@ class Piece {
         let s = new Sequence();
         let r = 0;
 
-        s.randomFloats( sL , 0.1 , 0.2 );
+        s.randomFloats( sL , 0.1 , 1 );
         s.sumSequence();
         s.add( this.globalNow );
 
         s = s.sequence;
 
         const fund = 432 * 1 ;
-        const iA = [ 1 , M3 , P5 , 2 ];
-        const oA = [ 1 , 2 , 0.5 , 0.25 , 0.125 ];
+        const iA = [ 1 , M2 , P5 , M6 , M3 ];
+        const oA = [ 1 , 2 , 0.5 ];
 
         for( let i = 0 ; i < sL ; i++ ){
 
             this.resoTick1.play( s[ i ] );
             this.resoTick1.f.biquad.frequency.setValueAtTime( fund * randomArrayValue( iA ) * randomArrayValue( oA ) , s[ i ] );
             this.resoTick1.w.wG.gain.gain.setValueAtTime( randomFloat( 0.000025 , 0.0005 ) , s[ i ] );
-            this.resoTick1.output.gain.gain.setValueAtTime( randomFloat( 0.25 , 0.6 ) , s[ i ] );
+            this.resoTick1.output.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
 
-            this.resoTick1.wG.gain.gain.setValueAtTime( randomFloat( 0.5 , 1 ) , s[ i ] );
-            this.resoTick1.d.output.gain.setValueAtTime( randomFloat( 1 , 2 ) , s[ i ] );
-            this.resoTick1.d2.output.gain.setValueAtTime( randomFloat( 1 , 2 ) , s[ i ] );
-            this.resoTick1.c.output.gain.setValueAtTime( randomFloat( 2.75 , 3 ) , s[ i ] );
+            this.resoTick1.wG.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
+            this.resoTick1.d.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , 0.2 );
+            this.resoTick1.d2.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , 0.2 );
+            this.resoTick1.c.output.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
 
         }
 
@@ -202,632 +200,6 @@ class Piece {
 
 }
 
-class BufferSplice extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 0.25 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432;
-        this.oB.loop = true;
-        this.oB.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // sine splice
-            this.sB.sine( 1 , 1 ).fill( 0 );
-
-            this.oB.spliceBuffer( this.sB.buffer , 0 , 0.2 , 0 );
-            this.oB.spliceBuffer( this.sB.buffer , 0.5 , 0.625 , 0.5 );
-
-            this.sB.sine( 1.01 , 1 ).fill( 0 );
-
-            this.oB.spliceBuffer( this.sB.buffer , 0.625 , 0.75 , 0.625 );
-
-            // sawtooth splice
-            this.sB.inverseSawtooth( 4 ).fill( 0 );
-
-            this.oB.spliceBuffer( this.sB.buffer , 0.2 , 0.5 , 0.2 );
-
-            // noise splice
-            this.sB.noise().fill( 0 );
-
-            this.oB.spliceBuffer( this.sB.buffer , 0.75 , 1 , 0.75 );
-
-        this.oB.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).multiply( 0 );
-
-
-        // envelope buffer
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).add( 0 );
-        this.eB.playbackRate = 1;
-
-        this.eG = new MyGain( 0 );
-
-        this.oB.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.output );
-
-        bufferGraph( this.oB.buffer );
-
-    }
-
-    play() {
-
-        this.eB.startAtTime( piece.globalNow + 0 );
-
-    }
-
-}
-
-class DetuneSplice extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 1 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432 * 0.125 ;
-        this.oB.loop = true;
-        this.oB.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // detuned sines splice
-            const nS = 100;
-            const detuneRange = 0.05;
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.fm( randomFloat( 1 - detuneRange , 1 + detuneRange ) * randomArrayValue( [ 1 , 2 , 4 , 0.5 ] ) , randomFloat( 1 - detuneRange , 1 + detuneRange ) * randomArrayValue( [ 1 , 2 , 4 , 0.5 ] ) , 1 ).fill( 0 );
-
-                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.oB.movingAverage( 2156 );
-
-
-        // envelope buffer
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 4 ).add( 0 );
-        this.eB.playbackRate = 1;
-
-        this.eG = new MyGain( 0 );
-
-        this.oB.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.output );
-
-        bufferGraph( this.oB.buffer );
-
-    }
-
-
-    play( startTime , playbackRate ) {
-
-        this.oB.bufferSource.playbackRate.setValueAtTime( playbackRate , startTime );
-        this.eB.startAtTime( startTime );
-
-    }
-
-}
-
-class ScaleSplice extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 1 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432 * 0.125 ;
-        this.oB.loop = true;
-        this.oB.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // detuned sines splice
-            const nS = 10;
-            const detuneRange = 0.05;
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.sine( randomArrayValue( [ 1 , 2 , P5 , M3 ] ) , 1 ).fill( 0 );
-
-                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.oB.movingAverage( 2156 );
-
-
-        // envelope buffer
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 4 ).add( 0 );
-        this.eB.playbackRate = 1;
-
-        this.eG = new MyGain( 0 );
-
-        this.oB.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.output );
-
-        bufferGraph( this.oB.buffer );
-
-    }
-
-    play( startTime , playbackRate ) {
-
-        this.oB.bufferSource.playbackRate.setValueAtTime( playbackRate , startTime );
-        this.eB.startAtTime( startTime );
-
-    }
-
-}
-
-class SpliceFM extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 0.5 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432 * 0.125 ;
-        this.oB.loop = true;
-        this.oB.start();
-
-        this.oBG = new MyGain( 432 * 0.25 );
-
-        this.o = new MyOsc( 'sine' , 432 );
-        this.o.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // detuned sines splice
-            const nS = 100;
-            const detuneRange = 0.05;
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.sine( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.oB.movingAverage( 2156 );
-
-
-        // envelope buffer
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 4 ).add( 0 );
-        this.eB.playbackRate = 1;
-
-        this.eG = new MyGain( 0 );
-
-        this.oB.connect( this.oBG ); 
-        this.oBG.connect( this.o.frequencyInlet );
-        this.o.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.output );
-
-        bufferGraph( this.oB.buffer );
-
-    }
-
-    play( startTime , playbackRate ) {
-
-        this.oB.bufferSource.playbackRate.setValueAtTime( playbackRate , startTime );
-        this.eB.startAtTime( startTime );
-
-    }
-
-}
-
-class SpliceFMConvolver extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 0.5 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432 * 0.125 ;
-        this.oB.loop = true;
-        this.oB.start();
-
-        // convolverBuffer
-        this.cB = new MyBuffer2( 2 , 1 , audioCtx.sampleRate );
-        this.cSB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.c = new MyConvolver();
-        this.c.output.gain.value = 2;
-
-        this.oBG = new MyGain( 432 * 0.25 );
-
-        this.o = new MyOsc( 'sine' , 432 );
-        this.o.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // detuned sines splice
-            const nS = 100;
-            const detuneRange = 0.05;
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.sine( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.oB.movingAverage( 2156 );
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.fm( 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.cSB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.cSB.movingAverage( 2156 );
-            this.cB.bufferShape( this.cSB.buffer ).add( 0 );
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.fm( 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.cSB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.cSB.movingAverage( 2156 );
-            this.cB.bufferShape( this.cSB.buffer ).add( 1 );
-
-        this.c.setBuffer( this.cB.buffer );
-
-
-        // envelope buffer
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 4 ).add( 0 );
-        this.eB.playbackRate = 1;
-
-        this.eG = new MyGain( 0 );
-
-        this.oB.connect( this.oBG ); 
-        this.oBG.connect( this.o.frequencyInlet );
-        this.o.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.c );
-        this.c.connect( this.output );
-        this.eG.connect( this.output );
-
-        bufferGraph( this.oB.buffer );
-
-    }
-
-    play( startTime , playbackRate ) {
-
-        this.oB.bufferSource.playbackRate.setValueAtTime( playbackRate , startTime );
-        this.eB.startAtTime( startTime );
-
-    }
-
-}
-
-class SpliceFMConvolverAndWaveShaper extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 0.5 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432 * 0.125 ;
-        this.oB.loop = true;
-        this.oB.start();
-
-        // convolverBuffer
-        this.cB = new MyBuffer2( 2 , 1 , audioCtx.sampleRate );
-        this.cSB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.c = new MyConvolver();
-        this.c.output.gain.value = 0.25;
-
-        // shaperBuffer
-        this.shB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.sh = new MyWaveShaper();
-
-        this.oBG = new MyGain( 432 * 0.25 );
-
-        this.o = new MyOsc( 'sine' , 432 );
-        this.o.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // detuned sines splice
-            const nS = 100;
-            const cNS = 50;
-            const detuneRange = 0.05;
-
-            // fm splice
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.sine( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.oB.movingAverage( 2156 );
-
-            let r = 0;
-
-            // convolver splice 1
-            for( let i = 0 ; i < cNS ; i++ ){
-
-                r = randomInt( 0 , 2 );
-
-                if( r == 1 ){
-                    this.sB.sine( 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-                } else { this.sB.noise().fill( 0 ); }
-
-                this.cSB.spliceBuffer( this.sB.buffer , i / cNS , ( i + 1 ) / cNS , i / cNS );
-
-            }
-
-            // this.cSB.movingAverage( 2156 );
-            bufferGraph( this.cSB.buffer );
-            this.cB.bufferShape( this.cSB.buffer ).add( 0 );
-
-            // convolver splice 2
-            for( let i = 0 ; i < cNS ; i++ ){
-
-                r = randomInt( 0 , 2 );
-
-                if( r == 1 ){
-                    this.sB.sine( 432 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-                } else { this.sB.noise().fill( 0 ); }
-
-                this.cSB.spliceBuffer( this.sB.buffer , i / cNS , ( i + 1 ) / cNS , i / cNS );
-
-            }
-
-            // this.cSB.movingAverage( 2156 );
-            bufferGraph( this.cSB.buffer );
-            this.cB.bufferShape( this.cSB.buffer ).add( 1 );
-
-            this.c.setBuffer( this.cB.buffer );
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.sine( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.shB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.shB.movingAverage( 2156 );
-            this.sh.bufferShape( this.shB.buffer );
-
-        // envelope buffer
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 4 ).add( 0 );
-        this.eB.playbackRate = 1;
-
-        this.eG = new MyGain( 0 );
-
-        this.oB.connect( this.oBG ); 
-        this.oBG.connect( this.o.frequencyInlet );
-        this.o.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.sh );
-
-        this.sh.connect( this.c );
-        
-        // this.sh.connect( this.output );
-        this.c.connect( this.output );
-
-        bufferGraph( this.oB.buffer );
-
-    }
-
-    play( startTime , playbackRate ) {
-
-        this.oB.bufferSource.playbackRate.setValueAtTime( playbackRate , startTime );
-        this.eB.startAtTime( startTime );
-
-    }
-
-}
-
-class SpliceFadePad extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain ( 0.25 );
-
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load() {
-
-        // oscillator buffer
-        this.oB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.oB.playbackRate = 432 * 0.25 * randomArrayValue( [ 1 , M3 , P5 , M6 , P4 , 2 ] );
-        this.oB.loop = true;
-        this.oB.start();
-
-        // splice buffer
-        this.sB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-
-            // detuned sines splice
-            const nS = randomInt( 20 , 100 );
-            const detuneRange = 0.05;
-
-            for( let i = 0 ; i < nS ; i++ ){
-
-                this.sB.am( randomFloat( 1 - detuneRange , 1 + detuneRange ) , 0.5 * randomFloat( 1 - detuneRange , 1 + detuneRange ) , 1 ).fill( 0 );
-
-                this.oB.spliceBuffer( this.sB.buffer , i / nS , ( i + 1 ) / nS , i / nS );
-
-            }
-
-            this.oB.movingAverage( 2156 );
-
-            bufferGraph( this.oB.buffer );
-
-
-        // envelope buffer
-
-        const peak = randomFloat( 0.3 , 0.7 );
-
-        this.eB = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
-        this.eB.unipolarNoise().add( 0 );
-        this.eB.ramp( 0 , 1 , 0.00005 , 0.99995 , 1 , 1 ).multiply( 0 );
-
-        this.eB.playbackRate = randomFloat( 0.000006 , 0.000008 );
-        this.eB.loop = true;
-
-        this.eG = new MyGain( 0 );
-
-        // fx
-
-        this.cB = new MyBuffer2( 2 , 1 , audioCtx.sampleRate );
-
-        this.cB.noise().fill( 0 );
-        this.cB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 2 ).multiply( 0 );
-
-        this.cB.noise().fill( 1 );
-        this.cB.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 2 ).multiply( 1 );
-
-        this.c = new MyConvolver();
-        this.c.setBuffer( this.cB.buffer );
-
-        this.oB.connect( this.eG ); this.eB.connect( this.eG.gain.gain );
-        this.eG.connect( this.c );
-        this.c.connect(this.output);
-
-    }
-
-    play() {
-
-        this.eB.startAtTime( piece.globalNow + 0 );
-
-    }
-
-}
-
-class OverlappingWaves extends Piece {
-
-    constructor( piece ){
-
-        super();
-
-        this.output = new MyGain( 0.0625 );
-        
-        this.output.connect( piece.masterGain );
-
-    }
-
-    load( bufferLength ){
-
-        const duration = 2;
-        const playbackRate = bufferLength/duration;
-        const fund = 0.5 * 432 * bufferLength * duration;
-        const nH = 20;
-        const hA = [ 1 , M2 , P5 , P4 , M6 ];
-        const oA = [ 0.25 , 0.5 , 1 ];
-        let peak = 0;
-
-        this.buffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate );
-        this.buffer.playbackRate = playbackRate;
-
-        this.tempBuffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate);
-
-        for( let i = 0 ; i < nH ; i++ ){
-
-            peak = randomFloat( 0.3 , 0.7 );
-
-            this.tempBuffer.sine( fund * randomArrayValue( hA ) * randomArrayValue( oA ) , 1 ).fill( 0 );
-            this.tempBuffer.ramp( 0 , 1 , peak , randomFloat( peak , 0.7 ) , randomFloat( 1 , 2 ) , randomFloat( 1 , 2 ) ).multiply( 0 );
-            this.tempBuffer.constant( randomFloat( 0.25 , 1 ) ).multiply( 0 );
-    
-            this.buffer.bufferShape( this.tempBuffer.buffer ).add( 0 );
-
-        }
-
-        this.buffer.normalize( -1 , 1 );
-        this.buffer.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).multiply( 0 );
-
-        this.buffer.connect( this.output );
-
-    }
-
-    play(){
-
-        this.buffer.start();
-
-    }
-
-}
-
 class OverlappingWavesFM extends Piece {
 
     constructor( piece ){
@@ -931,7 +303,7 @@ class ResoTick extends Piece {
 
         super();
 
-        this.output = new MyGain( 0.25 );
+        this.output = new MyGain( 1 );
         
         this.output.connect( piece.masterGain );
 
@@ -945,14 +317,18 @@ class ResoTick extends Piece {
 
         // FILTER
 
-        this.f = new MyBiquad( 'bandpass' , 432 , 20 );
+        this.f = new MyBiquad( 'bandpass' , 432 , 10 );
         const f2 = new MyBiquad( 'lowpass' , 20000 , 1 );
 
         // WAVESHAPER
 
         this.w = new Effect();
-        this.w.fmShaper( 432 * 2 , 432 * 4 , 432 * 2 , 1 );
+        this.w.fmShaper( 432 * 1 , 432 * 2 , 432 * 2 , 1 );
         this.w.on();
+
+        this.w2 = new Effect();
+        this.w2.fmShaper( 432 * 1 , 432 * 2 , 432 * 2 , 0.00001 );
+        this.w2.on();
 
         this.wG = new MyGain( 1 );
 
@@ -961,25 +337,73 @@ class ResoTick extends Piece {
         const cLength = 2;
 
         this.c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
-        const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
+        const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate );
+        const lB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate );
+        const rB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate );
 
-        cB.noise().fill( 0 );
-        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 0 );
-        
-        cB.noise().fill( 1 );
-        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 1 );
-        
+        let lStart = 0;
+        let rStart = 0;
+        let lEnd = 0;
+        let rEnd = 0;
+
+        this.iA = [ 1 , M2 , M3 , P5 , M6 ];
+        const oA = [ 1 , 2 , 0.5 ];
+
+        for( let i = 0 ; i < this.iA.length ; i++ ){
+
+            lStart = randomFloat( 0 , 0.5 );
+            lEnd = lStart + randomFloat( 0 , 1 - lStart );
+            rStart = randomFloat( 0 , 0.5 );
+            rEnd = lStart + randomFloat( 0 , 1 - lStart );
+
+            cB.fm( this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , 1 ).fill( 0 );
+            cB.ramp( lStart , lEnd , 0.5 , 0.5 , randomFloat( 1 , 4 ) , randomFloat( 1 , 4 ) ).multiply( 0 );
+
+            lB.bufferShape( cB.buffer ).add( 0 );
+
+            cB.fm( this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , 1 ).fill( 1 );
+            cB.ramp( rStart , rEnd , 0.5 , 0.5 , randomFloat( 1 , 4 ) , randomFloat( 1 , 4 ) ).multiply( 1 );
+
+            rB.bufferShape( cB.buffer ).add( 0 );
+
+        }
+
+        for( let i = 0 ; i < this.iA.length ; i++ ){
+
+            lStart = randomFloat( 0 , 0.5 );
+            lEnd = lStart + randomFloat( 0 , 1 - lStart );
+            rStart = randomFloat( 0 , 0.5 );
+            rEnd = lStart + randomFloat( 0 , 1 - lStart );
+
+            cB.am( this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , 1 ).fill( 0 );
+            cB.ramp( lStart , lEnd , 0.01 , 0.015 , randomFloat( 0.1 , 2 ) , randomFloat( 1 , 4 ) ).multiply( 0 );
+
+            lB.bufferShape( cB.buffer ).add( 0 );
+
+            cB.am( this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , 1 ).fill( 1 );
+            cB.ramp( rStart , rEnd , 0.01 , 0.015 , randomFloat( 0.1 , 2 ) , randomFloat( 1 , 4 ) ).multiply( 1 );
+
+            rB.bufferShape( cB.buffer ).add( 0 );
+
+        }
+
+        lB.normalize( -1 , 1 );
+        rB.normalize( -1 , 1 );
+
+        cB.bufferShape( lB.buffer ).fill( 0 );
+        cB.bufferShape( rB.buffer ).fill( 1 );
+
         this.c.setBuffer( cB.buffer );
 
         // DELAY
 
         this.d = new Effect();
-        this.d.randomEcho();
+        this.d.stereoDelay( randomFloat(0.35, 0.6), randomFloat(0.35, 0.6), 0.3 );
         this.d.on();
         this.d.output.gain.value = 0.125;
 
         this.d2 = new Effect();
-        this.d2.randomEcho();
+        this.d2.stereoDelay( randomFloat(0.35, 0.6), randomFloat(0.35, 0.6), 0.3 );
         this.d2.on();
         this.d2.output.gain.value = 1;
 
@@ -992,18 +416,14 @@ class ResoTick extends Piece {
         this.f.connect( this.w );
 
         this.w.connect( this.wG );
-        this.w.connect( this.d );
         this.w.connect( this.c );
-        this.w.connect( this.d2 );
-
-        // this.wG.connect( this.output );
-        this.d.connect( this.output );
-        this.d2.connect( this.output );
 
         this.c.connect( this.d );
         this.c.connect( this.d2 );
 
         this.c.connect( this.output );
+        this.d.connect( this.output );
+        this.d2.connect( this.output );
 
     }
 
