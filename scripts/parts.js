@@ -68,8 +68,8 @@ class Piece {
             this.resoTick1.output.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
 
             this.resoTick1.wG.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
-            this.resoTick1.d.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , 0.2 );
-            this.resoTick1.d2.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , 0.2 );
+            this.resoTick1.d.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , randomFloat( 0.1 , 0.3 ) );
+            this.resoTick1.d2.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , randomFloat( 0.1 , 0.3 ) );
             this.resoTick1.c.output.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
 
         }
@@ -407,6 +407,11 @@ class ResoTick extends Piece {
         this.d2.on();
         this.d2.output.gain.value = 1;
 
+        // SCHWA
+
+        this.s = new SchwaBox( 'ae' );
+        this.s.output.gain.value = 0.025;
+
         // PAN 
 
         this.pan = new MyPanner2( 0 );
@@ -424,6 +429,9 @@ class ResoTick extends Piece {
         this.c.connect( this.output );
         this.d.connect( this.output );
         this.d2.connect( this.output );
+
+        this.c.connect( this.s );
+        this.s.connect( this.output );
 
     }
 
