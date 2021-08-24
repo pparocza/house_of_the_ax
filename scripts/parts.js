@@ -22,7 +22,7 @@ class Piece {
 
     load() {
 
-        // this.loadOverlappingWavesFM();
+        this.loadOverlappingWavesFM();
         this.loadResoTick();
         // this.loadSpliceFadePad();
 
@@ -34,6 +34,7 @@ class Piece {
 		this.globalNow = audioCtx.currentTime;
 
         this.startResoTick();
+        this.startOverlappingWavesFM();
 
     }
 
@@ -412,9 +413,10 @@ class ResoTick extends Piece {
         this.s = new SchwaBox( 'ae' );
         this.s.output.gain.value = 0.025;
 
-        // PAN 
+        this.s2 = new SchwaBox( 'i' );
+        this.s2.output.gain.value = 0.025;
 
-        this.pan = new MyPanner2( 0 );
+        // CONNECTIONS
 
         this.buffer.connect( f2 );
         f2.connect( this.f );
@@ -426,12 +428,13 @@ class ResoTick extends Piece {
         this.c.connect( this.d );
         this.c.connect( this.d2 );
 
-        this.c.connect( this.output );
-        this.d.connect( this.output );
-        this.d2.connect( this.output );
+       this.c.connect( this.output );
+       this.d.connect( this.output );
+       this.d2.connect( this.output );
 
-        this.c.connect( this.s );
-        this.s.connect( this.output );
+       this.c.connect( this.s );
+       this.c.connect( this.s2 );
+       this.s.connect( this.output );
 
     }
 
