@@ -138,6 +138,29 @@ class Piece {
 
     }
 
+    startOverlappingWavesFM2(){
+
+        const sL = 100;
+        let s = new Sequence();
+        let r = 0;
+
+        s.randomFloats( sL , 0.125 , 3 );
+        s.sumSequence();
+        s.add( this.globalNow );
+
+        s = s.sequence;
+
+        for( let i = 0 ; i < sL ; i++ ){
+
+            r = randomInt( 0 , this.soundArray.length );
+
+            this.soundArray[ r ].play( s[ i ] );
+            this.soundArray[ r ].pan.setPositionAtTime( randomFloat( -1 , 1 ) , s[ i ] );
+
+        }
+
+    }
+
     loadOverlappingWaves(){
 
         const nSounds = 1;
