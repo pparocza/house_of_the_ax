@@ -59,6 +59,21 @@ class Piece {
 
     }
 
+    loadOverlappingWavesFM(){
+
+        const nSounds = 5;
+
+        this.soundArray = [];
+
+        for( let i = 0 ; i < nSounds ; i++ ){
+
+            this.soundArray[i] = new OverlappingWavesFM( this );
+            this.soundArray[i].load( 2 );
+
+        }
+
+    }
+
     startNoiseTick( startTime , sequenceLength , inst ){
 
         const sL = sequenceLength;
