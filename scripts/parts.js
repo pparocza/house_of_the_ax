@@ -36,7 +36,7 @@ class Piece {
         this.startNoiseTick( 0 , 200 , this.noiseTick2 );
         this.startNoiseTick( 0 , 200 , this.noiseTick3 );
         this.startNoiseTick( 0 , 200 , this.noiseTick4 );
-        this.startNoiseTick( 0 , 200 , this.noiseTick5 );
+        // this.startNoiseTick( 0 , 200 , this.noiseTick5 );
 
         this.startOverlappingWavesFM2( 0 );
 
@@ -279,7 +279,9 @@ class NoiseTick extends Piece {
 
        this.c.connect( this.s );
        this.c.connect( this.s2 );
+
        this.s.connect( this.output );
+       this.s2.connect( this.output );
 
     }
 
