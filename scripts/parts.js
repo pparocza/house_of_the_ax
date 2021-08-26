@@ -23,6 +23,7 @@ class Piece {
     load() {
 
         this.loadNoiseTick();
+        this.loadOverlappingWavesFM();
 
     }
 
@@ -36,6 +37,8 @@ class Piece {
         this.startNoiseTick( 0 , 200 , this.noiseTick3 );
         this.startNoiseTick( 0 , 200 , this.noiseTick4 );
         this.startNoiseTick( 0 , 200 , this.noiseTick5 );
+
+        this.startOverlappingWavesFM2( 0 );
 
     }
 
