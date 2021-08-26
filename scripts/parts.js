@@ -31,20 +31,37 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        this.startNoiseTick( 0 );
+        this.startNoiseTick( 0 , 200 , this.noiseTick1 );
+        this.startNoiseTick( 0 , 200 , this.noiseTick2 );
+        this.startNoiseTick( 0 , 200 , this.noiseTick3 );
+        this.startNoiseTick( 0 , 200 , this.noiseTick4 );
+        this.startNoiseTick( 0 , 200 , this.noiseTick5 );
 
     }
 
     loadNoiseTick(){
 
-        this.inst1 = new NoiseTick( this );
-        this.inst1.load();
+        this.noiseTick1 = new NoiseTick( this );
+        this.noiseTick1.load( 0.125 );
+
+        this.noiseTick2 = new NoiseTick( this );
+        this.noiseTick2.load( 0.5 );
+
+        this.noiseTick3 = new NoiseTick( this );
+        this.noiseTick3.load( 0.25 );
+
+        this.noiseTick4 = new NoiseTick( this );
+        this.noiseTick4.load( 1 );
+
+        this.noiseTick5 = new NoiseTick( this );
+        this.noiseTick5.load( 2 );
+        this.noiseTick5.output.gain.gain.value = 0;
 
     }
 
-    startNoiseTick( startTime ){
+    startNoiseTick( startTime , sequenceLength , inst ){
 
-        const sL = 200;
+        const sL = sequenceLength;
         let s = new Sequence();
         let r = 0;
 
@@ -61,15 +78,15 @@ class Piece {
 
         for( let i = 0 ; i < sL ; i++ ){
 
-            this.inst1.play( s[ i ] );
-            this.inst1.f.biquad.frequency.setValueAtTime( fund * randomArrayValue( iA ) * randomArrayValue( oA ) , s[ i ] );
-            this.inst1.w.wG.gain.gain.setValueAtTime( randomFloat( 0.000025 , 0.0005 ) , s[ i ] );
-            this.inst1.output.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
+            inst.play( s[ i ] );
+            inst.f.biquad.frequency.setValueAtTime( fund * randomArrayValue( iA ) * randomArrayValue( oA ) , s[ i ] );
+            inst.w.wG.gain.gain.setValueAtTime( randomFloat( 0.000025 , 0.0005 ) , s[ i ] );
+            // inst.output.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
 
-            this.inst1.wG.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
-            this.inst1.d.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , randomFloat( 0.1 , 0.3 ) );
-            this.inst1.d2.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , randomFloat( 0.1 , 0.3 ) );
-            this.inst1.c.output.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
+            inst.wG.gain.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
+            inst.d.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , randomFloat( 0.1 , 0.3 ) );
+            inst.d2.output.gain.setTargetAtTime( randomFloat( 0 , 1 ) , s[ i ] , randomFloat( 0.1 , 0.3 ) );
+            inst.c.output.gain.setTargetAtTime( randomFloat( 1 , 1 ) , s[ i ] , 0.2 );
 
         }
 
@@ -96,7 +113,7 @@ class NoiseTick extends Piece {
 
     }
 
-    load(){
+    load( convolverLength ){
 
         this.buffer = new MyBuffer2( 1 , 1 , audioCtx.sampleRate );
         this.buffer.inverseSawtooth( 10 ).fill( 0 );
@@ -121,7 +138,7 @@ class NoiseTick extends Piece {
 
         // REVERB
 
-        const cLength = 1;
+        const cLength = convolverLength;
 
         this.c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
         const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate );
