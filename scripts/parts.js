@@ -33,8 +33,8 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        this.startResoTick();
-        this.startOverlappingWavesFM();
+        this.startResoTick( 0 );
+        this.startOverlappingWavesFM2( 20 );
 
     }
 
@@ -45,7 +45,7 @@ class Piece {
 
     }
 
-    startResoTick(){
+    startResoTick( startTime ){
 
         const sL = 200;
         let s = new Sequence();
@@ -53,6 +53,7 @@ class Piece {
 
         s.randomFloats( sL , 0.1 , 1 );
         s.sumSequence();
+        s.add( startTime );
         s.add( this.globalNow );
 
         s = s.sequence;
@@ -138,7 +139,7 @@ class Piece {
 
     }
 
-    startOverlappingWavesFM2(){
+    startOverlappingWavesFM2( startTime ){
 
         const sL = 100;
         let s = new Sequence();
@@ -146,6 +147,7 @@ class Piece {
 
         s.randomFloats( sL , 0.125 , 3 );
         s.sumSequence();
+        s.add( startTime );
         s.add( this.globalNow );
 
         s = s.sequence;
@@ -192,28 +194,6 @@ class Piece {
 
     }
 
-    startOverlappingWavesFM2(){
-
-        const sL = 100;
-        let s = new Sequence();
-        let r = 0;
-
-        s.randomFloats( sL , 0.125 , 3 );
-        s.sumSequence();
-        s.add( this.globalNow );
-
-        s = s.sequence;
-
-        for( let i = 0 ; i < sL ; i++ ){
-
-            r = randomInt( 0 , this.soundArray.length );
-
-            this.soundArray[ r ].play( s[ i ] );
-            this.soundArray[ r ].pan.setPositionAtTime( randomFloat( -1 , 1 ) , s[ i ] );
-
-        }
-
-    }
 
     stop() {
 
@@ -230,7 +210,7 @@ class OverlappingWavesFM extends Piece {
 
         super();
 
-        this.output = new MyGain( 4 );
+        this.output = new MyGain( 2 );
         
         this.output.connect( piece.masterGain );
 
@@ -243,7 +223,7 @@ class OverlappingWavesFM extends Piece {
         const fund = 1 * 432 * bufferLength * duration;
         const nH = 20;
         const hA2 = [ 1 , M2 , M3 , P4 , P5 , M6 , M7 ];
-        const oA2 = [ 0.5 , 1 , 2 ];
+        const oA2 = [ 1 , 2 ];
         let peak = 0;
 
         this.buffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate );
@@ -400,12 +380,12 @@ class ResoTick extends Piece {
             rEnd = lStart + randomFloat( 0 , 1 - lStart );
 
             cB.am( this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , 1 ).fill( 0 );
-            cB.ramp( lStart , lEnd , 0.01 , 0.015 , randomFloat( 0.1 , 2 ) , randomFloat( 1 , 4 ) ).multiply( 0 );
+            cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.1 , 2 ) , randomFloat( 1 , 4 ) ).multiply( 0 );
 
             lB.bufferShape( cB.buffer ).add( 0 );
 
             cB.am( this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , this.iA[i] * 432 * randomFloat( 0.999 , 1.001 ) * randomArrayValue( oA ) , 1 ).fill( 1 );
-            cB.ramp( rStart , rEnd , 0.01 , 0.015 , randomFloat( 0.1 , 2 ) , randomFloat( 1 , 4 ) ).multiply( 1 );
+            cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.1 , 2 ) , randomFloat( 1 , 4 ) ).multiply( 1 );
 
             rB.bufferShape( cB.buffer ).add( 0 );
 
