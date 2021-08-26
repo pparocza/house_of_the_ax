@@ -287,3 +287,100 @@ class NoiseTick extends Piece {
     }
 
 }
+
+class OverlappingWavesFM extends Piece {
+
+    constructor( piece ){
+
+        super();
+
+        this.output = new MyGain( 2 );
+        
+        this.output.connect( piece.masterGain );
+
+    }
+
+    load( bufferLength ){
+
+        const duration = 1;
+        const playbackRate = bufferLength/duration;
+        const fund = 1 * 432 * bufferLength * duration;
+        const nH = 20;
+        const hA2 = [ 1 , M2 , M3 , P4 , P5 , M6 , M7 ];
+        const oA2 = [ 1 , 2 ];
+        let peak = 0;
+
+        this.buffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate );
+        this.buffer.playbackRate = playbackRate;
+
+        this.tempBuffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate);
+
+        for( let i = 0 ; i < nH ; i++ ){
+
+            this.tempBuffer.sine( fund * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , 1 ).fill( 0 );
+            this.tempBuffer.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 8 ).multiply( 0 );
+            this.tempBuffer.constant( randomFloat( 0.25 , 1 ) ).multiply( 0 );
+    
+            this.buffer.bufferShape( this.tempBuffer.buffer ).add( 0 );
+
+        }
+
+        // this.buffer.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).multiply( 0 );
+        this.buffer.normalize( -1 , 1 );
+
+        const bG = new MyGain( fund * 0.25 );
+
+        const o = new MyOsc( 'sine' , 0 );
+        o.start();
+
+        // FILTER
+
+        const f = new MyBiquad( 'highpass' , 50 , 1 );
+
+        // REVERB
+
+        const cLength = randomFloat( 2 , 5 );
+
+        const c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
+        const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
+
+        cB.noise().fill( 0 );
+        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 0 );
+        
+        cB.noise().fill( 1 );
+        cB.ramp( 0 , 1 , 0.01 , 0.015 , randomFloat( 0.05 , 0.2 ) , randomFloat( 2 , 4 ) ).multiply( 1 );
+        
+        c.setBuffer( cB.buffer );
+
+        // DELAY
+
+        const d = new Effect();
+        d.randomEcho();
+        d.on();
+        d.output.gain.value = 0.125;
+
+        // PAN 
+
+        this.pan = new MyPanner2( 0 );
+
+        this.buffer.connect( bG );
+        bG.connect( o.frequencyInlet );
+        o.connect( f );
+        
+        f.connect( this.pan );
+        f.connect( c );
+        f.connect( d );
+
+        this.pan.connect( this.output );
+        c.connect( this.output );
+        d.connect( this.output );
+
+    }
+
+    play( time ){
+
+        this.buffer.startAtTime( time );
+
+    }
+
+}
