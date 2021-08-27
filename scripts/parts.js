@@ -32,10 +32,10 @@ class Piece {
         this.fadeFilter.start(1, 50);
 		this.globalNow = audioCtx.currentTime;
 
-        this.startNoiseTick( 0 , 200 , this.noiseTick1 );
-        this.startNoiseTick( 0 , 200 , this.noiseTick2 );
-        this.startNoiseTick( 0 , 200 , this.noiseTick3 );
-        this.startNoiseTick( 0 , 200 , this.noiseTick4 );
+        // this.startNoiseTick( 0 , 200 , this.noiseTick1 );
+        // this.startNoiseTick( 0 , 200 , this.noiseTick2 );
+        // this.startNoiseTick( 0 , 200 , this.noiseTick3 );
+        // this.startNoiseTick( 0 , 200 , this.noiseTick4 );
 
         this.startOverlappingWavesFM2( 0 );
 
@@ -317,8 +317,8 @@ class OverlappingWavesFM extends Piece {
 
         for( let i = 0 ; i < nH ; i++ ){
 
-            this.tempBuffer.sine( fund * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , 1 ).fill( 0 );
-            this.tempBuffer.ramp( 0 , 1 , 0.01 , 0.015 , 0.1 , 8 ).multiply( 0 );
+            this.tempBuffer.fm( fund * randomFloat( 0.999 , 1.001 ) * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , fund * randomFloat( 0.999 , 1.001 ) * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , randomFloat( 5 , 5 ) , 1 ).fill( 0 );
+            this.tempBuffer.ramp( 0 , 1 , 0.5 , 0.5 , 0.1 , 8 ).multiply( 0 );
             this.tempBuffer.constant( randomFloat( 0.25 , 1 ) ).multiply( 0 );
     
             this.buffer.bufferShape( this.tempBuffer.buffer ).add( 0 );
@@ -362,6 +362,8 @@ class OverlappingWavesFM extends Piece {
         // PAN 
 
         this.pan = new MyPanner2( 0 );
+
+        // CONNECTIONS
         
         this.buffer.connect( bG );
         bG.connect( o.frequencyInlet );
