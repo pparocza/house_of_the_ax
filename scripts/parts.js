@@ -36,7 +36,6 @@ class Piece {
         this.startNoiseTick( 0 , 200 , this.noiseTick2 );
         this.startNoiseTick( 0 , 200 , this.noiseTick3 );
         this.startNoiseTick( 0 , 200 , this.noiseTick4 );
-        // this.startNoiseTick( 0 , 200 , this.noiseTick5 );
 
         this.startOverlappingWavesFM2( 0 );
 
@@ -55,10 +54,6 @@ class Piece {
 
         this.noiseTick4 = new NoiseTick( this );
         this.noiseTick4.load( 1 );
-
-        this.noiseTick5 = new NoiseTick( this );
-        this.noiseTick5.load( 2 );
-        this.noiseTick5.output.gain.gain.value = 0;
 
     }
 
@@ -367,7 +362,7 @@ class OverlappingWavesFM extends Piece {
         // PAN 
 
         this.pan = new MyPanner2( 0 );
-
+        
         this.buffer.connect( bG );
         bG.connect( o.frequencyInlet );
         o.connect( f );
