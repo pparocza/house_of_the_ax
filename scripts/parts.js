@@ -60,13 +60,14 @@ class Piece {
     loadOverlappingWavesFM(){
 
         const nSounds = 5;
+        const fund = 432;
 
         this.soundArray = [];
 
         for( let i = 0 ; i < nSounds ; i++ ){
 
             this.soundArray[i] = new OverlappingWavesFM( this );
-            this.soundArray[i].load( 2 );
+            this.soundArray[i].load( 2 , fund );
 
         }
 
@@ -300,14 +301,14 @@ class OverlappingWavesFM extends Piece {
 
     }
 
-    load( bufferLength ){
+    load( bufferLength , freq ){
 
         const duration = 1;
         const playbackRate = bufferLength/duration;
-        const fund = 1 * 432 * bufferLength * duration;
+        const fund = 4 * freq * bufferLength * duration;
         const nH = 20;
         const hA2 = [ 1 , M2 , M3 , P4 , P5 , M6 , M7 ];
-        const oA2 = [ 1 , 2 ];
+        const oA2 = [ 1 , 2 , 4 ];
         let peak = 0;
 
         this.buffer = new MyBuffer2( 1 , bufferLength , audioCtx.sampleRate );
@@ -317,15 +318,16 @@ class OverlappingWavesFM extends Piece {
 
         for( let i = 0 ; i < nH ; i++ ){
 
-            this.tempBuffer.fm( fund * randomFloat( 0.999 , 1.001 ) * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , fund * randomFloat( 0.999 , 1.001 ) * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , randomFloat( 5 , 5 ) , 1 ).fill( 0 );
-            this.tempBuffer.ramp( 0 , 1 , 0.5 , 0.5 , 0.1 , 8 ).multiply( 0 );
+            peak = randomFloat( 0.1 , 0.9 );
+
+            this.tempBuffer.fm( fund * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , fund * randomArrayValue( hA2 ) * randomArrayValue( oA2 ) , randomFloat( 1 , 4 ) , 1 ).fill( 0 );
+            this.tempBuffer.ramp( 0 , 1 , peak , peak , 4 , 0.1 ).multiply( 0 );
             this.tempBuffer.constant( randomFloat( 0.25 , 1 ) ).multiply( 0 );
     
             this.buffer.bufferShape( this.tempBuffer.buffer ).add( 0 );
 
         }
 
-        // this.buffer.ramp( 0 , 1 , 0.5 , 0.5 , 1 , 1 ).multiply( 0 );
         this.buffer.normalize( -1 , 1 );
 
         const bG = new MyGain( fund * 0.25 );
@@ -339,7 +341,7 @@ class OverlappingWavesFM extends Piece {
 
         // REVERB
 
-        const cLength = randomFloat( 2 , 5 );
+        const cLength = randomFloat( 2 , 4 );
 
         const c = new MyConvolver( 2 , cLength , audioCtx.sampleRate );
         const cB = new MyBuffer2( 2 , cLength , audioCtx.sampleRate);
